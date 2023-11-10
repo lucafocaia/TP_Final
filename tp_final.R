@@ -99,11 +99,12 @@ for (i in 1:length(anios)) {
 require(ggplot2)
 grafico = ggplot(data = datos, mapping = aes(x = Anio, y = CO2_ppm)) + 
   geom_point()
+grafico
 
 
-
-
-
+#Guardo los promedios en una tabla en formato ascii
+#Creo distintos vectores para armar un data frame nuevo y luego guardarlo como
+ #tabla
 
 
 
