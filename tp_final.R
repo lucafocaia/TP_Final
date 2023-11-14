@@ -3,8 +3,8 @@
  ## Analisis de las concentraciones de CO2 en Hawaii ##
 
 #Leo el archivo ascii y cargo los datos
-archivo <- "~/PracticasLabo/TP_Final/co2_daily_mlo.csv" 
-archivo1 <- "~/PracticasLabo/TP_Final/co2_mm_mlo.csv"
+archivo <- "~/Documentos/Labo_Luca/TP_Final/co2_daily_mlo.csv" 
+archivo1 <- "~/Documentos/Labo_Luca/TP_Final/co2_mm_mlo.csv"
 #Direcciones de los archivos a usar
 
 datos <- read.csv(archivo, skip = 32)
@@ -24,29 +24,28 @@ tail(datos1) #Datos mensuales desde Marzo de 1958 hasta Septiembre de 2023
  #en los diarios
 
 #Recorto mis datos
-datos <- datos[datos$Anio %in% 1975:2022,]
-datos1 <- datos1[datos1$year %in% 1975:2022,]
+datos <- datos[datos$Anio %in% 1984:2022,]
+datos1 <- datos1[datos1$year %in% 1984:2022,]
 
 #########################
 #Relleno los dias que no hay datos con el valor mensual de ese mes
-anios <- c(1975:2022)
-meses <- c(1:12)
-for (i in 1:length(anios)) {
-  anio <- anios[i]
-  datos_anio <- datos[datos$Anio == anio,]
-  for (j in 1:length(meses)) {
-    datos_mes <- datos_anio[datos_anio$Mes == j,]
-    media_mes = round(mean(datos_mes$CO2_ppm),2)
-    if (j==1 | j==3 | j==5 | j==7 | j==8 | j==10 | j==12) {
-      
-    }
-  }
-}  
+ #anios <- c(1984:2022)
+ #meses <- c(1:12)
+ #for (i in 1:length(anios)) {
+  #anio <- anios[i]
+  #datos_anio <- datos[datos$Anio == anio,]
+  #for (j in 1:length(meses)) {
+    #datos_mes <- datos_anio[datos_anio$Mes == j,]
+    #media_mes = round(mean(datos_mes$CO2_ppm),2)
+    #if (j==1 | j==3 | j==5 | j==7 | j==8 | j==10 | j==12) {
+    #}
+   #}
+ #}  
 #Dejo esto en stand by, por ahora trabajo sin los datos que no estan
 #########################
 
 #Agrego en "datos" una columna con los datos desestacionalizados
-anios <- c(1975:2022)
+anios <- c(1984:2022)
 meses <- c(1:12)
 Desestacionalizado = c()
 for (i in 1:length(anios)) {
@@ -67,7 +66,7 @@ for (i in 1:length(anios)) {
 #Agrego a mis datos la columna con los datos desestacionalizados
 datos = cbind(datos, Desestacionalizado)
 
-#Calculo los promedios mensual y semanal
+#Calculo los promedios mensuales y semanales
  #PROMEDIO MENSUAL
 media_mensual_xanio = c()
 for (i in 1:length(anios)) {
@@ -95,16 +94,30 @@ for (i in 1:length(anios)) {
   }
 }
 
+#Armo una columna fechas para el grafico
+require(lubridate)
+Fecha <- c()
+for (i in 1:length(datos$Anio)) {
+  anio <- datos$Anio[i]
+  mes <- datos$Mes[i]
+  dia <- datos$Dia[i]
+  fecha <- make_date(year = anio, month = mes, day = dia)
+  fecha <- format(fecha, tz="")
+  Fecha[i] <- fecha 
+}
+Fecha <- ymd(Fecha)
+
+#Agrego una columna con las fechas
+datos$Fecha <- Fecha
+
 #Armo el grafico pedido con ggplot
 require(ggplot2)
-grafico = ggplot(data = datos, mapping = aes(x = Anio, y = CO2_ppm)) + 
-  geom_point()
-grafico
+g = ggplot(data = datos, mapping = aes(x = Fecha, y = CO2_ppm)) 
+g = g + geom_point() 
+g = g + scale_x_date(date_breaks = "4 years", date_labels = "%Y-%m")
+g
 
 
-#Guardo los promedios en una tabla en formato ascii
-#Creo distintos vectores para armar un data frame nuevo y luego guardarlo como
- #tabla
 
 
 
