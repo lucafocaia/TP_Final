@@ -29,19 +29,90 @@ datos1 <- datos1[datos1$year %in% 1984:2022,]
 
 #########################
 #Relleno los dias que no hay datos con el valor mensual de ese mes
- #anios <- c(1984:2022)
- #meses <- c(1:12)
- #for (i in 1:length(anios)) {
-  #anio <- anios[i]
-  #datos_anio <- datos[datos$Anio == anio,]
-  #for (j in 1:length(meses)) {
-    #datos_mes <- datos_anio[datos_anio$Mes == j,]
-    #media_mes = round(mean(datos_mes$CO2_ppm),2)
-    #if (j==1 | j==3 | j==5 | j==7 | j==8 | j==10 | j==12) {
-    #}
-   #}
- #}  
-#Dejo esto en stand by, por ahora trabajo sin los datos que no estan
+
+for (i in 1:length(anios)) {
+  anio <- anios[i]
+  datos_anio <- datos[datos$Anio == anio,]
+  for (j in 1:length(meses)) {
+    datos_mes <- datos_anio[datos_anio$Mes == j,]
+    media_mes = round(mean(datos_mes$CO2_ppm),2)
+    if (j==1 | j==3 | j==5 | j==7 | j==8 | j==10 | j==12) {
+    }
+  }
+}
+
+
+#Armo un nuevo df y lo voy llenando
+ #Anios
+anios <- rep(1984:2022, each = 365)
+ 
+ #Meses
+ene <- rep(1, 31)
+feb <- rep(2, 28)
+mar <- rep(3, 31)
+abr <- rep(4, 30)
+may <- rep(5, 31)
+jun <- rep(6, 30)
+jul <- rep(7, 31)
+ago <- rep(8, 31)
+sep <- rep(9, 30)
+oct <- rep(10, 31)
+nov <- rep(11, 30)
+dic <- rep(12, 31)
+meses_un_anio <- c(ene, feb, mar, abr, may, jun, jul, ago, sep, oct, nov, dic)
+meses <- rep(meses_un_anio, 39)
+
+ #Dias
+dias_31 <- c(1:31)
+dias_30 <- c(1:30)
+dias_28 <- c(1:28)
+dias_un_anio <- c(dias_31, dias_28, dias_31, dias_30, dias_31, dias_30, dias_31,
+                  dias_31, dias_30, dias_31, dias_30, dias_31)
+dias <- rep(dias_un_anio, 39)
+
+#Defino un nuevo df
+datos_nuevo <- data.frame("Anio" = anios, "Mes" = meses, "Dia" = dias)
+
+#Agrego una columna con las fechas
+require(lubridate)
+Fecha <- c()
+for (i in 1:length(datos1$Anio)) {
+  anio <- datos_nuevo$Anio[i]
+  mes <- datos_nuevo$Mes[i]
+  dia <- datos_nuevo$Dia[i]
+  fecha <- make_date(year = anio, month = mes, day = dia)
+  fecha <- format(fecha, tz="")
+  Fecha[i] <- fecha 
+}
+Fecha <- ymd(Fecha)
+datos_nuevo$Fecha <- Fecha
+
+#Agrego una columna vacia para los datos
+datos_nuevo$CO2_ppm <- 0
+
+#Veo los datos que faltan
+anios1 <- c(1984:2022)
+meses1 <- c(1:12)
+for (i in 1:length(anios1)) {
+  anio = anios1[i]
+  for (j in 1:length(meses1)) {
+    datos_anio_mes <- datos[datos$Anio == anio & datos$Mes == j,]
+    datos_nuevo_anio_mes <- datos_nuevo[datos_nuevo$Anio == anio & datos_nuevo$Mes == j,]
+    faltantes <- setdiff(datos_nuevo_anio_mes$Dia, datos_anio_mes$Dia)
+    #pos_faltantes <- which(datos_nuevo$Dia[datos_nuevo$Anio == anio & datos_nuevo$Mes == j] %in% faltantes)
+    media_mes <- datos1$average[datos1$year == anio & datos1$month == j]
+    datos_nuevo$CO2_ppm[datos_nuevo$Anio == anio & datos_nuevo$Mes == j &
+                      datos_nuevo$Dia %in% faltantes] <- media_mes
+  }
+}
+
+
+
+
+
+
+
+
 #########################
 
 #Agrego en "datos" una columna con los datos desestacionalizados
@@ -94,21 +165,6 @@ for (i in 1:length(anios)) {
   }
 }
 
-#Armo una columna fechas para el grafico
-require(lubridate)
-Fecha <- c()
-for (i in 1:length(datos$Anio)) {
-  anio <- datos$Anio[i]
-  mes <- datos$Mes[i]
-  dia <- datos$Dia[i]
-  fecha <- make_date(year = anio, month = mes, day = dia)
-  fecha <- format(fecha, tz="")
-  Fecha[i] <- fecha 
-}
-Fecha <- ymd(Fecha)
-
-#Agrego una columna con las fechas
-datos$Fecha <- Fecha
 
 #Armo el grafico pedido con ggplot
 require(ggplot2)
