@@ -3,8 +3,8 @@
  ## Analisis de las concentraciones de CO2 en Hawaii ##
 
 #Leo el archivo ascii y cargo los datos
-archivo <- "~/Documentos/Labo_Luca/TP_Final/co2_daily_mlo.csv" 
-archivo1 <- "~/Documentos/Labo_Luca/TP_Final/co2_mm_mlo.csv"
+archivo <- "~/PracticasLabo/TP_Final/co2_daily_mlo.csv" 
+archivo1 <- "~/PracticasLabo/TP_Final/co2_mm_mlo.csv"
 #Direcciones de los archivos a usar
 
 datos <- read.csv(archivo, skip = 32)
@@ -27,21 +27,7 @@ tail(datos1) #Datos mensuales desde Marzo de 1958 hasta Septiembre de 2023
 datos <- datos[datos$Anio %in% 1984:2022,]
 datos1 <- datos1[datos1$year %in% 1984:2022,]
 
-#########################
 #Relleno los dias que no hay datos con el valor mensual de ese mes
-
-for (i in 1:length(anios)) {
-  anio <- anios[i]
-  datos_anio <- datos[datos$Anio == anio,]
-  for (j in 1:length(meses)) {
-    datos_mes <- datos_anio[datos_anio$Mes == j,]
-    media_mes = round(mean(datos_mes$CO2_ppm),2)
-    if (j==1 | j==3 | j==5 | j==7 | j==8 | j==10 | j==12) {
-    }
-  }
-}
-
-
 #Armo un nuevo df y lo voy llenando
  #Anios
 anios <- rep(1984:2022, each = 365)
@@ -73,10 +59,22 @@ dias <- rep(dias_un_anio, 39)
 #Defino un nuevo df
 datos_nuevo <- data.frame("Anio" = anios, "Mes" = meses, "Dia" = dias)
 
-#Agrego una columna con las fechas
+#Agrego una columna con las fechas a ambos data frames
 require(lubridate)
 Fecha <- c()
-for (i in 1:length(datos1$Anio)) {
+for (i in 1:length(datos$Anio)) {
+  anio <- datos$Anio[i]
+  mes <- datos$Mes[i]
+  dia <- datos$Dia[i]
+  fecha <- make_date(year = anio, month = mes, day = dia)
+  fecha <- format(fecha, tz="")
+  Fecha[i] <- fecha 
+}
+Fecha <- ymd(Fecha)
+datos$Fecha <- Fecha
+
+Fecha <- c()
+for (i in 1:length(datos_nuevo$Anio)) {
   anio <- datos_nuevo$Anio[i]
   mes <- datos_nuevo$Mes[i]
   dia <- datos_nuevo$Dia[i]
@@ -90,40 +88,36 @@ datos_nuevo$Fecha <- Fecha
 #Agrego una columna vacia para los datos
 datos_nuevo$CO2_ppm <- 0
 
-#Veo los datos que faltan
+#Completo los datos que faltan con las medias de su respectivo mes
 anios1 <- c(1984:2022)
 meses1 <- c(1:12)
 for (i in 1:length(anios1)) {
   anio = anios1[i]
   for (j in 1:length(meses1)) {
     datos_anio_mes <- datos[datos$Anio == anio & datos$Mes == j,]
-    datos_nuevo_anio_mes <- datos_nuevo[datos_nuevo$Anio == anio & datos_nuevo$Mes == j,]
+    datos_nuevo_anio_mes <- datos_nuevo[datos_nuevo$Anio == anio &
+                                          datos_nuevo$Mes == j,]
     faltantes <- setdiff(datos_nuevo_anio_mes$Dia, datos_anio_mes$Dia)
-    #pos_faltantes <- which(datos_nuevo$Dia[datos_nuevo$Anio == anio & datos_nuevo$Mes == j] %in% faltantes)
     media_mes <- datos1$average[datos1$year == anio & datos1$month == j]
     datos_nuevo$CO2_ppm[datos_nuevo$Anio == anio & datos_nuevo$Mes == j &
                       datos_nuevo$Dia %in% faltantes] <- media_mes
   }
 }
 
-
-
-
-
-
-
-
-#########################
+#Completo  los dias del nuevo df con los datos de los dias que si tengo
+for (i in 1:length(datos$Fecha)) {
+  fecha <- datos$Fecha[i]
+  datos_nuevo$CO2_ppm[datos_nuevo$Fecha == fecha] <- 
+    datos$CO2_ppm[datos$Fecha == fecha]
+}
 
 #Agrego en "datos" una columna con los datos desestacionalizados
-anios <- c(1984:2022)
-meses <- c(1:12)
 Desestacionalizado = c()
-for (i in 1:length(anios)) {
-  anio = anios[i]
-  datos_anio = datos[datos$Anio == anio,]
+for (i in 1:length(anios1)) {
+  anio = anios1[i]
+  datos_anio = datos_nuevo[datos_nuevo$Anio == anio,]
   datos_anio1 = datos1[datos1$year == anio,]
-  for (j in 1:length(meses)) {
+  for (j in 1:length(meses1)) {
     datos_mes = datos_anio[datos_anio$Mes == j,]
     datos_mes1 = datos_anio1[datos_anio1$month == j,]
     desestacionalizado_mes = seq(datos_mes1$deseasonalized,
@@ -135,18 +129,22 @@ for (i in 1:length(anios)) {
    #necesario para cada mes porque estan dados como datos mensuales
 
 #Agrego a mis datos la columna con los datos desestacionalizados
-datos = cbind(datos, Desestacionalizado)
+datos_nuevo = cbind(datos_nuevo, Desestacionalizado)
+
+#Selecciono los datos de 2019 a 2021 para armar el grafico solicitado
+datos_periodo <- datos_nuevo[datos_nuevo$Anio %in% 2019:2021,]
 
 #Calculo los promedios mensuales y semanales
  #PROMEDIO MENSUAL
-media_mensual_xanio = c()
-for (i in 1:length(anios)) {
-  for (j in 1:length(meses)) {
-    anio = anios[i]
-    datos_anio = datos[datos$Anio == anio,]
-    datos_mes = datos_anio[datos_anio$Mes == j,]
-    media_mes = round(mean(datos_mes$CO2_ppm, na.rm = T),2)
-    media_mensual_xanio = c(media_mensual_xanio, media_mes)
+anios_periodo <- c(2019:2021)
+media_periodo = c()
+for (i in 1:length(anios_periodo)) {
+  for (j in 1:length(meses1)) {
+    anio <- anios_periodo[i]
+    datos_anio <- datos_periodo[datos_periodo$Anio == anio,]
+    datos_mes <- datos_anio[datos_anio$Mes == j,]
+    media_mes <- round(mean(datos_mes$CO2_ppm, na.rm = T),2)
+    media_periodo[i] <- media_mes
   }
 }
 
