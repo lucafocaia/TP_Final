@@ -4,7 +4,7 @@
 
 #Leo el archivo ascii y cargo los datos
  #CASA
-archivo <- "~/PracticasLabo/TP_Final/co2_daily_mlo.csv" 
+archivo <- "~/PracticasLabo/TP_Final/co2_daily_mlo.csv"
 archivo1 <- "~/PracticasLabo/TP_Final/co2_mm_mlo.csv"
  #FACU
 archivo <- "~/Documentos/Labo_Luca/TP_Final/co2_daily_mlo.csv" 
@@ -135,62 +135,62 @@ for (i in 1:length(anios1)) {
 datos_nuevo = cbind(datos_nuevo, Desestacionalizado)
 
 #Selecciono los datos de 2020 a 2021 para armar el grafico solicitado
-datos_periodo <- datos_nuevo[datos_nuevo$Anio %in% 2020:2021,]
+datos_covid <- datos_nuevo[datos_nuevo$Anio %in% 2020:2021,]
 
 #Calculo los promedios mensuales y semanales
  #PROMEDIO MENSUAL
-anios_periodo <- c(2020:2021)
-media_mensual_periodo = c()
-for (i in 1:length(anios_periodo)) {
+anios_covid <- c(2020:2021)
+media_mensual_covid = c()
+for (i in 1:length(anios_covid)) {
   for (j in 1:length(meses1)) {
-    anio <- anios_periodo[i]
-    datos_anio <- datos_periodo[datos_periodo$Anio == anio,]
+    anio <- anios_covid[i]
+    datos_anio <- datos_covid[datos_covid$Anio == anio,]
     datos_mes <- datos_anio[datos_anio$Mes == j,]
     media_mes <- round(mean(datos_mes$CO2_ppm, na.rm = T),2)
-    media_mensual_periodo <- c(media_mensual_periodo, media_mes)
+    media_mensual_covid <- c(media_mensual_covid, media_mes)
   }
 }
 
  #PROMEDIO SEMANAL
-media_semanal_periodo = c()
-for (i in 1:length(anios_periodo)) {
+media_semanal_covid = c()
+for (i in 1:length(anios_covid)) {
   for (j in 1:length(meses1)) {
-    anio <- anios_periodo[i]
-    datos_anio <- datos_periodo[datos_periodo$Anio == anio,]
+    anio <- anios_covid[i]
+    datos_anio <- datos_covid[datos_covid$Anio == anio,]
     datos_mes <- datos_anio[datos_anio$Mes == j,]
     for (k in seq(1,31,8)) {
       semana <- datos_mes[datos_mes$Dia %in% k:(k+7),]
       media_semanal <- round(mean(semana$CO2_ppm, na.rm = T), 2)
-      media_semanal_periodo <- c(media_semanal_periodo, media_semanal)
+      media_semanal_covid <- c(media_semanal_covid, media_semanal)
     }
   }
 }
 
 #Agrego las medias al data frame
-datos_periodo$Media_mensual <- 0
-datos_periodo$Media_semanal <- 0
+datos_covid$Media_mensual <- 0
+datos_covid$Media_semanal <- 0
 
 k <- 0
-for (i in 1:length(anios_periodo)) {
- anio <- anios_periodo[i]
+for (i in 1:length(anios_covid)) {
+ anio <- anios_covid[i]
  for (j in 1:length(meses1)) {
-   datos_periodo$Media_mensual[
-    datos_periodo$Anio == anio & datos_periodo$Mes == j] <-
-    media_mensual_periodo[j+k*12]
+   datos_covid$Media_mensual[
+    datos_covid$Anio == anio & datos_covid$Mes == j] <- 
+     media_mensual_covid[j+k*12]
  }
  k <- k + 1
 }
 
 sec <- seq(1,31,8)
 h <- 0
-for (i in 1:length(anios_periodo)) {
-  anio <- anios_periodo[i]
+for (i in 1:length(anios_covid)) {
+  anio <- anios_covid[i]
   for (j in 1:length(meses1)) {
     for (k in 1:length(sec)) {
       dia <- sec[k]
-      datos_periodo$Media_semanal[
-       datos_periodo$Anio == anio & datos_periodo$Mes == j &
-        datos_periodo$Dia %in% dia:(dia+7)] <- media_semanal_periodo[k+h*4]
+      datos_covid$Media_semanal[
+        datos_covid$Anio == anio & datos_covid$Mes == j &
+          datos_covid$Dia %in% dia:(dia+7)] <- media_semanal_covid[k+h*4]
     }
     h <- h + 1
   }
@@ -198,20 +198,20 @@ for (i in 1:length(anios_periodo)) {
 
 #Armo el grafico pedido con ggplot #####geom_ribbon()
 require(ggplot2)
-datos_periodo$Etiqueta <- month(datos_periodo$Mes,label = T)
-datos_periodo$Etiqueta[which(datos_periodo$Dia != 15)] <- NA
-datos_periodo$Media_corrida <- datos_periodo$Media_mensual + 0.3
+datos_covid$Etiqueta <- month(datos_covid$Mes,label = T)
+datos_covid$Etiqueta[which(datos_covid$Dia != 15)] <- NA
+datos_covid$Media_corrida <- datos_covid$Media_mensual + 0.2
 
-g = ggplot(data = datos_periodo, mapping = aes(x = Fecha, y = CO2_ppm)) +
-  geom_point(color = "dark grey") +
+g <- ggplot(data = datos_covid, mapping = aes(x = Fecha, y = CO2_ppm)) +
+  geom_point(color = "gray45") +
   scale_x_date(date_breaks = "2 month", date_labels = "%Y-%m") + 
-  geom_point(mapping = aes(x = Fecha, y = Media_mensual),
-                   shape = 0, color = "dark blue", size = 0.4) +
-  geom_text(datos_periodo,
-            mapping = aes(label = Etiqueta,
-                          x = Fecha, y = Media_corrida), color = "blue") +
   geom_point(mapping = aes(x = Fecha, y = Media_semanal), shape = 0,
-             color = "violet", size = 0.3)
+             fill = "darkviolet", color = "darkviolet", size = 0.8) + 
+  geom_point(mapping = aes(x = Fecha, y = Media_mensual),
+             shape = 0, fill = "darkblue", color = "darkblue", size = 0.8) +
+  geom_text(datos_covid, 
+            mapping = aes(label = Etiqueta, x = Fecha, y = Media_corrida),
+            color = "#0000CD")
 g
 
 
