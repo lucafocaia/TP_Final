@@ -196,23 +196,54 @@ for (i in 1:length(anios_covid)) {
   }
 }
 
-#Armo el grafico pedido con ggplot #####geom_ribbon()
+#Armo el grafico pedido con ggplot 
 require(ggplot2)
 datos_covid$Etiqueta <- month(datos_covid$Mes,label = T)
 datos_covid$Etiqueta[which(datos_covid$Dia != 15)] <- NA
 datos_covid$Media_corrida <- datos_covid$Media_mensual + 0.2
 
 g <- ggplot(data = datos_covid, mapping = aes(x = Fecha, y = CO2_ppm)) +
-  geom_point(color = "gray45") +
+  geom_point(color = "grey45") +
   scale_x_date(date_breaks = "2 month", date_labels = "%Y-%m") + 
   geom_point(mapping = aes(x = Fecha, y = Media_semanal), shape = 0,
              fill = "darkviolet", color = "darkviolet", size = 0.8) + 
   geom_point(mapping = aes(x = Fecha, y = Media_mensual),
              shape = 0, fill = "darkblue", color = "darkblue", size = 0.8) +
-  geom_text(datos_covid, 
+  geom_text(datos_covid,
             mapping = aes(label = Etiqueta, x = Fecha, y = Media_corrida),
-            color = "#0000CD")
+            color = "#191970", cex = 6) +
+  labs(title = "Mediciones de CO2 durante la pandemia en Mauna Loa",
+       x = "Fecha", y = "CO2 (ppm)",
+       subtitle = "Con promedios mensuales (azul) y semanales (violeta)")
 g
+
+#####geom_ribbon()
+
+#Armo un nuevo df solo con los promedios para guardar en una tabla ascii
+anios_tabla <- rep(2020:2021, each = 48)
+meses_tabla <- rep(1:12, each = 4, times = 2)
+semanas_tabla <- rep(1:4, times = 24) 
+df_tabla <- data.frame("Anio" = anios_tabla, "Mes" = meses_tabla, 
+                       "Semana" = semanas_tabla, "Media mensual" = 0,
+                       "Media semanal" = 0)
+
+#Lleno las columnas de las medias
+df_tabla$Media.semanal <- media_semanal_covid
+
+k <- 0
+for (i in 1:length(anios_covid)) {
+  for (j in 1:length(meses1)) {
+    anio <- anios_covid[i]
+    df_tabla$Media.mensual[df_tabla$Anio == anio & df_tabla$Mes == j] <-
+      media_mensual_covid[j+k*12]
+  }
+  k <- k + 1
+}
+
+#Guardo los datos en una tabla
+write.table(df_tabla, file = "Medias mensuales y semanales de CO2 en pandemia",
+            col.names = T, row.names = F, quote = F)
+
 
 
 
