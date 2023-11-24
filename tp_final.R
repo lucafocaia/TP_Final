@@ -2,6 +2,9 @@
 ### TP FINAL ###
  ## Analisis de las concentraciones de CO2 en Hawaii ##
 
+#Setear el directorio de trabajo
+setwd()
+
 #Leo el archivo ascii y cargo los datos
  #CASA
 archivo <- "~/PracticasLabo/TP_Final/co2_daily_mlo.csv"
@@ -213,11 +216,10 @@ g <- ggplot(data = datos_covid, mapping = aes(x = Fecha, y = CO2_ppm)) +
             mapping = aes(label = Etiqueta, x = Fecha, y = Media_corrida),
             color = "#191970", cex = 6) +
   labs(title = "Mediciones de CO2 durante la pandemia en Mauna Loa",
-       x = "Fecha", y = "CO2 (ppm)",
+       x = "Tiempo", y = "CO2 (ppm)",
        subtitle = "Con promedios mensuales (azul) y semanales (violeta)")
 g
 
-#####geom_ribbon()
 
 #Armo un nuevo df solo con los promedios para guardar en una tabla ascii
 anios_tabla <- rep(2020:2021, each = 48)
@@ -243,6 +245,118 @@ for (i in 1:length(anios_covid)) {
 #Guardo los datos en una tabla
 write.table(df_tabla, file = "Medias mensuales y semanales de CO2 en pandemia",
             col.names = T, row.names = F, quote = F)
+
+
+#Voy a comparar la serie temporal completa (1984-2022) con y sin la
+ #estacionalidad, ambos graficos en el mismo pero en distintos paneles
+require(ggplot2)
+require(patchwork)
+
+serie <- ggplot(data = datos_nuevo, mapping = aes(x = Fecha, y = CO2_ppm)) +
+  geom_line(color = "black") +
+  scale_x_date(date_breaks = "2 years", date_labels = "%Y") +
+  labs(title = "Serie temporal de CO2 (Periodo 1984-2021)", x = "Tiempo", 
+       y = "CO2 (ppm)")
+serie2 <- ggplot(data = datos_nuevo, mapping = aes(x = Fecha,
+                                                   y = Desestacionalizado)) +
+  geom_line(color = "black") +
+  scale_x_date(date_breaks = "2 years", date_labels = "%Y") +
+  labs(title = "Datos desestacionalizados de CO2", x = "Tiempo", 
+       y = "CO2 (ppm)")
+serie
+serie2
+
+#Junto los graficos, uno abajo del otro para que se vea mejor
+serie / serie2
+
+
+#Armo una columna con la diferencia entre los datos medidos de CO2 y los
+ #desestacionalizados, luego los promedio por mes sobre todos los anios
+datos_nuevo$Dif <- datos_nuevo$CO2_ppm - datos_nuevo$Desestacionalizado
+
+#Tambien quiero agregar el desvio estandar
+datos_nuevo$Sd <- sd(datos_nuevo$CO2_ppm)
+datos_nuevo$Sd_desestacionalizado <- sd()
+
+#Armo una columna con los datos + el desvio y otra con los datos menos el 
+ #desvio
+datos_nuevo$Datos_mas_sd <- datos_nuevo$CO2_ppm + datos_nuevo$Sd
+datos_nuevo$Datos_menos_sd <- datos_nuevo$CO2_ppm - datos_nuevo$Sd
+datos_nuevo$Datos_mas_sd_des <- datos_nuevo$Desestacionalizado + 
+  datos_nuevo$Sd_desestacionalizado
+datos_nuevo$Datos_menos_sd_des <- datos_nuevo$Desestacionalizado - 
+  datos_nuevo$Sd_desestacionalizado
+
+#Armo unas dos ultimas columnas con las diferencias entre los desvios
+datos_nuevo$Dif_max <- datos_nuevo$Datos_mas_sd - datos_nuevo$Datos_mas_sd_des
+datos_nuevo$Dif_min <- datos_nuevo$Datos_menos_sd -
+  datos_nuevo$Datos_menos_sd_des
+
+#Calculo la media de las diferencias
+medias_dif <- c()
+medias_difmax <- c()
+medias_difmin <- c()
+for (i in 1:length(meses1)) {
+  datos_mes <- datos_nuevo[datos_nuevo$Mes == i,]
+  media_mes <- round(mean(datos_mes$Dif), 2)
+  medias_dif[i] <- media_mes
+  media_mes_max <- round(mean(datos_mes$Dif_max), 2)
+  medias_difmax[i] <- media_mes_max
+  media_mes_min <- round(mean(datos_mes$Dif_min), 2)
+  medias_difmin[i] <- media_mes_min
+}
+
+#Armo un data frame con los valores obtenidos
+df_estacionalidad <- data.frame("Mes" = meses1, "Media_dif" = medias_dif,
+                                "Media_difmax" = medias_difmax,
+                                "Media_difmin" = medias_difmin)
+
+#Grafico lo obtenido 
+p <- ggplot(data = df_estacionalidad, mapping = aes(x = Mes, y = Media_dif)) +
+  scale_x_continuous(breaks = seq(min(df_estacionalidad$Mes),
+                                  max(df_estacionalidad$Mes), by = 1)) +
+  geom_ribbon(aes(ymin = medias_difmin, ymax = medias_difmax),
+              fill = "palegreen") +
+  geom_line(color = "black", size = 0.9) +
+  geom_point(color = "black") +
+  geom_line(data = df_estacionalidad, mapping = aes(x = Mes, y = Media_difmax),
+            color = "#757575", size = 0.8) +
+  geom_line(data = df_estacionalidad, mapping = aes(x = Mes, y = Media_difmin),
+            color = "#757575", size = 0.8) +
+  labs(title = "Variabilidad estacional del CO2",
+       subtitle = "Periodo 1984-2022", x = "Meses", y = "")
+p
+#Sí, hay variabilidad estacional, si no hubiese, el grafico tomaria un valor en
+ #y constante, por lo tanto las concentraciones de CO2 en la atmosfera varian
+ #segun la estacion o la epoca del anio.
+
+
+#Para ver si hay un cambio en el registro del CO2 debido al COVID, comparo el
+ #anio de pandemia con encierro mas estricto (2020) con el promedio por mes
+ #sobre todos los anios
+
+#Calculo la media, esta vez del dato puro
+media_climatologica <- c()
+for (i in 1:length(meses1)) {
+  datos_mes <- datos_nuevo[datos_nuevo$Mes == i,]
+  media_mes <- round(mean(datos_mes$CO2_ppm), 2)
+  media_climatologica[i] <- media_mes
+}
+
+#Selecciono los datos del 2020
+datos_2020 <- datos_nuevo[datos_nuevo$Anio == 2020,]
+
+#Calculo el promedio mensual del 2020
+media_2020 <- c()
+for (i in 1:length(meses1)) {
+  datos_mes_2020 <- datos_2020[datos_2020$Mes == i,]
+  media_mes_2020 <- round(mean(datos_mes_2020$CO2_ppm), 2)
+  media_2020[i] <- media_mes_2020
+}
+
+#Armo un df con la media climatologica y las medias mensuales del 2020
+
+
 
 
 
