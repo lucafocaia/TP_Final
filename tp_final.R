@@ -250,7 +250,6 @@ write.table(df_tabla, file = "Medias mensuales y semanales de CO2 en pandemia",
 #Voy a comparar la serie temporal completa (1984-2022) con y sin la
  #estacionalidad, ambos graficos en el mismo pero en distintos paneles
 require(ggplot2)
-require(patchwork)
 
 serie <- ggplot(data = datos_nuevo, mapping = aes(x = Fecha, y = CO2_ppm)) +
   geom_line(color = "black") +
@@ -276,7 +275,7 @@ datos_nuevo$Dif <- datos_nuevo$CO2_ppm - datos_nuevo$Desestacionalizado
 
 #Tambien quiero agregar el desvio estandar
 datos_nuevo$Sd <- sd(datos_nuevo$CO2_ppm)
-datos_nuevo$Sd_desestacionalizado <- sd()
+datos_nuevo$Sd_desestacionalizado <- sd(datos_nuevo$Desestacionalizado)
 
 #Armo una columna con los datos + el desvio y otra con los datos menos el 
  #desvio
@@ -317,12 +316,12 @@ p <- ggplot(data = df_estacionalidad, mapping = aes(x = Mes, y = Media_dif)) +
                                   max(df_estacionalidad$Mes), by = 1)) +
   geom_ribbon(aes(ymin = medias_difmin, ymax = medias_difmax),
               fill = "palegreen") +
-  geom_line(color = "black", size = 0.9) +
+  geom_line(color = "black", linewidth = 0.9) +
   geom_point(color = "black") +
   geom_line(data = df_estacionalidad, mapping = aes(x = Mes, y = Media_difmax),
-            color = "#757575", size = 0.8) +
+            color = "#757575", linewidth = 0.8) +
   geom_line(data = df_estacionalidad, mapping = aes(x = Mes, y = Media_difmin),
-            color = "#757575", size = 0.8) +
+            color = "#757575", linewidth = 0.8) +
   labs(title = "Variabilidad estacional del CO2",
        subtitle = "Periodo 1984-2022", x = "Meses", y = "")
 p
@@ -355,7 +354,36 @@ for (i in 1:length(meses1)) {
 }
 
 #Armo un df con la media climatologica y las medias mensuales del 2020
+df_comparacion <- data.frame("Mes" = meses1,
+                             "Media climatologica" = media_climatologica, 
+                             "Media mensual 2020" = media_2020)
 
+#Armo el grafico
+comp <- ggplot(data = df_comparacion,
+               mapping = aes(x = Mes, y = media_climatologica)) +
+  geom_line(color = "black", linewidth = 1) + 
+  geom_line(data = df_comparacion, mapping = aes(x = Mes, y = media_2020), 
+            color = "darkred", size = 1)
+comp
+
+
+media_2020_des <- c()
+for (i in 1:length(meses1)) {
+  datos_mes_2020 <- datos_2020[datos_2020$Mes == i,]
+  media_mes_2020 <- round(mean(datos_mes_2020$Dif), 2)
+  media_2020_des[i] <- media_mes_2020
+}
+
+df_comp <- data.frame("Mes" = meses1,
+                      "Media.climatologica" = medias_dif, 
+                      "Media.mensual.2020" = media_2020_des)
+
+comp2 <- ggplot(data = df_comp,
+               mapping = aes(x = Mes, y = Media.climatologica)) +
+  geom_line(color = "black", linewidth = 1) + 
+  geom_line(data = df_comp, mapping = aes(x = Mes, y = media_2020_des), 
+            color = "darkred", size = 1)
+comp2
 
 
 
