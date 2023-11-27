@@ -249,8 +249,6 @@ write.table(df_tabla, file = "Medias mensuales y semanales de CO2 en pandemia",
 
 #Voy a comparar la serie temporal completa (1984-2022) con y sin la
  #estacionalidad, ambos graficos en el mismo pero en distintos paneles
-require(ggplot2)
-
 serie <- ggplot(data = datos_nuevo, mapping = aes(x = Fecha, y = CO2_ppm)) +
   geom_line(color = "black") +
   scale_x_date(date_breaks = "2 years", date_labels = "%Y") +
@@ -266,63 +264,61 @@ serie
 serie2
 
 #Junto los graficos, uno abajo del otro para que se vea mejor
-serie / serie2
+require(patchwork)
+serie/serie2
 
 
-#Armo una columna con la diferencia entre los datos medidos de CO2 y los
- #desestacionalizados, luego los promedio por mes sobre todos los anios
-datos_nuevo$Dif <- datos_nuevo$CO2_ppm - datos_nuevo$Desestacionalizado
+#Armo una columna con las ppm que corresponden al ciclo estacional, luego 
+ #los promedio por mes sobre todos los anios
+datos_nuevo$Ciclo <- datos_nuevo$CO2_ppm -
+  datos_nuevo$Desestacionalizado
 
-#Tambien quiero agregar el desvio estandar
-datos_nuevo$Sd <- sd(datos_nuevo$CO2_ppm)
-datos_nuevo$Sd_desestacionalizado <- sd(datos_nuevo$Desestacionalizado)
+#Calculo el desvio estandar de ambos tipos de datos
+desvio <- sd(datos_nuevo$CO2_ppm)
+desvio_des <- sd(datos_nuevo$Desestacionalizado)
 
-#Armo una columna con los datos + el desvio y otra con los datos menos el 
- #desvio
-datos_nuevo$Datos_mas_sd <- datos_nuevo$CO2_ppm + datos_nuevo$Sd
-datos_nuevo$Datos_menos_sd <- datos_nuevo$CO2_ppm - datos_nuevo$Sd
-datos_nuevo$Datos_mas_sd_des <- datos_nuevo$Desestacionalizado + 
-  datos_nuevo$Sd_desestacionalizado
-datos_nuevo$Datos_menos_sd_des <- datos_nuevo$Desestacionalizado - 
-  datos_nuevo$Sd_desestacionalizado
+#Calculo el max y el min desvio de los datos normales y los desestacionalizados
+max_desvio<- datos_nuevo$CO2_ppm + desvio
+min_desvio <- datos_nuevo$CO2_ppm - desvio
+max_desvio_des <- datos_nuevo$Desestacionalizado + desvio_des
+min_desvio_des <- datos_nuevo$Desestacionalizado - desvio_des
 
-#Armo unas dos ultimas columnas con las diferencias entre los desvios
-datos_nuevo$Dif_max <- datos_nuevo$Datos_mas_sd - datos_nuevo$Datos_mas_sd_des
-datos_nuevo$Dif_min <- datos_nuevo$Datos_menos_sd -
-  datos_nuevo$Datos_menos_sd_des
+#Armo dos columnas con los desvios max y min del ciclo estacional
+datos_nuevo$Ds_max_ciclo <- max_desvio - max_desvio_des
+datos_nuevo$Ds_min_ciclo <- min_desvio - min_desvio_des
 
-#Calculo la media de las diferencias
-medias_dif <- c()
-medias_difmax <- c()
-medias_difmin <- c()
+#Calculo la media climatologica del ciclo estacional y de sus desvios
+medias_ciclo <- c()
+medias_ciclo_dsmax <- c()
+medias_ciclo_dsmin <- c()
 for (i in 1:length(meses1)) {
   datos_mes <- datos_nuevo[datos_nuevo$Mes == i,]
-  media_mes <- round(mean(datos_mes$Dif), 2)
-  medias_dif[i] <- media_mes
-  media_mes_max <- round(mean(datos_mes$Dif_max), 2)
-  medias_difmax[i] <- media_mes_max
-  media_mes_min <- round(mean(datos_mes$Dif_min), 2)
-  medias_difmin[i] <- media_mes_min
+  media_mes <- round(mean(datos_mes$Ciclo), 2)
+  medias_ciclo[i] <- media_mes
+  media_mes_max <- round(mean(datos_mes$Ds_max_ciclo), 2)
+  medias_ciclo_dsmax[i] <- media_mes_max
+  media_mes_min <- round(mean(datos_mes$Ds_min_ciclo), 2)
+  medias_ciclo_dsmin[i] <- media_mes_min
 }
 
 #Armo un data frame con los valores obtenidos
-df_estacionalidad <- data.frame("Mes" = meses1, "Media_dif" = medias_dif,
-                                "Media_difmax" = medias_difmax,
-                                "Media_difmin" = medias_difmin)
+df_estacionalidad <- data.frame("Mes" = meses1, "Media_ciclo" = medias_ciclo,
+                                "Media_dsmax" = medias_ciclo_dsmax,
+                                "Media_dsmin" = medias_ciclo_dsmin)
 
 #Grafico lo obtenido 
-p <- ggplot(data = df_estacionalidad, mapping = aes(x = Mes, y = Media_dif)) +
+p <- ggplot(data = df_estacionalidad, mapping = aes(x = Mes, y = Media_ciclo)) +
   scale_x_continuous(breaks = seq(min(df_estacionalidad$Mes),
                                   max(df_estacionalidad$Mes), by = 1)) +
-  geom_ribbon(aes(ymin = medias_difmin, ymax = medias_difmax),
+  geom_ribbon(aes(ymin = medias_ciclo_dsmin, ymax = medias_ciclo_dsmax),
               fill = "palegreen") +
   geom_line(color = "black", linewidth = 0.9) +
   geom_point(color = "black") +
-  geom_line(data = df_estacionalidad, mapping = aes(x = Mes, y = Media_difmax),
+  geom_line(data = df_estacionalidad, mapping = aes(x = Mes, y = Media_dsmax),
             color = "#757575", linewidth = 0.8) +
-  geom_line(data = df_estacionalidad, mapping = aes(x = Mes, y = Media_difmin),
+  geom_line(data = df_estacionalidad, mapping = aes(x = Mes, y = Media_dsmin),
             color = "#757575", linewidth = 0.8) +
-  labs(title = "Variabilidad estacional del CO2",
+  labs(title = "Ciclo estacional del CO2",
        subtitle = "Periodo 1984-2022", x = "Meses", y = "")
 p
 #Sí, hay variabilidad estacional, si no hubiese, el grafico tomaria un valor en
@@ -334,29 +330,53 @@ p
  #anio de pandemia con encierro mas estricto (2020) con el promedio por mes
  #sobre todos los anios
 
-#Calculo la media, esta vez del dato puro
-media_climatologica <- c()
-for (i in 1:length(meses1)) {
-  datos_mes <- datos_nuevo[datos_nuevo$Mes == i,]
-  media_mes <- round(mean(datos_mes$CO2_ppm), 2)
-  media_climatologica[i] <- media_mes
-}
 
 #Selecciono los datos del 2020
 datos_2020 <- datos_nuevo[datos_nuevo$Anio == 2020,]
 
-#Calculo el promedio mensual del 2020
+#Y aparte, todos los anios menos el 2020
+datos_sin_2020 <- datos_nuevo[datos_nuevo$Anio != 2020,]
+
+#Calculo la media mensual del ciclo estacional del 2020
 media_2020 <- c()
+media_2020_dsmax <- c()
+media_2020_dsmin <- c()
 for (i in 1:length(meses1)) {
-  datos_mes_2020 <- datos_2020[datos_2020$Mes == i,]
-  media_mes_2020 <- round(mean(datos_mes_2020$CO2_ppm), 2)
-  media_2020[i] <- media_mes_2020
+  datos_mes <- datos_2020[datos_2020$Mes == j,]
+  media_mes <- round(mean(datos_mes$Ciclo), 2)
+  media_2020[i] <- media_mes
+  media_mes_dsmax <- round(mean(datos_mes$Ds_max_ciclo), 2)
+  media_2020_dsmax[i] <- media_mes_dsmax
+  media_mes_dsmin <- round(mean(datos_mes$Ds_min_ciclo), 2)
+  media_2020_dsmin[i] <- media_mes_dsmin
 }
+
+#Calculo la media climatologica de todos los anios excluyendo el 2020
+medias_ciclo1 <- c()
+medias_ciclo_dsmax1 <- c()
+medias_ciclo_dsmin1 <- c()
+for (i in 1:length(meses1)) {
+  datos_mes <- datos_sin_2020[datos_sin_2020$Mes == i,]
+  media_mes <- round(mean(datos_mes$Ciclo), 2)
+  medias_ciclo1[i] <- media_mes
+  media_mes_max <- round(mean(datos_mes$Ds_max_ciclo), 2)
+  medias_ciclo_dsmax1[i] <- media_mes_max
+  media_mes_min <- round(mean(datos_mes$Ds_min_ciclo), 2)
+  medias_ciclo_dsmin1[i] <- media_mes_min
+}
+
 
 #Armo un df con la media climatologica y las medias mensuales del 2020
 df_comparacion <- data.frame("Mes" = meses1,
-                             "Media climatologica" = media_climatologica, 
-                             "Media mensual 2020" = media_2020)
+                             "Media_climatologica_sin_2020" = medias_ciclo1,
+                             "Media_dsmax_sin_2020" = medias_ciclo_dsmax1,
+                             "Media_dsmin_sin_2020" = medias_ciclo_dsmin1,
+                             "Media mensual 2020" = media_2020,
+                             "Media_dsmax_2020" = media_2020_dsmax,
+                             "Media_dsmin_2020" = media_2020_dsmin)
+
+
+######CORREGIR######
 
 #Armo el grafico
 comp <- ggplot(data = df_comparacion,
