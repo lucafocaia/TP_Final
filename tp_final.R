@@ -329,8 +329,6 @@ p
 #Para ver si hay un cambio en el registro del CO2 debido al COVID, comparo el
  #anio de pandemia con encierro mas estricto (2020) con el promedio por mes
  #sobre todos los anios
-
-
 #Selecciono los datos del 2020
 datos_2020 <- datos_nuevo[datos_nuevo$Anio == 2020,]
 
@@ -342,7 +340,7 @@ media_2020 <- c()
 media_2020_dsmax <- c()
 media_2020_dsmin <- c()
 for (i in 1:length(meses1)) {
-  datos_mes <- datos_2020[datos_2020$Mes == j,]
+  datos_mes <- datos_2020[datos_2020$Mes == i,]
   media_mes <- round(mean(datos_mes$Ciclo), 2)
   media_2020[i] <- media_mes
   media_mes_dsmax <- round(mean(datos_mes$Ds_max_ciclo), 2)
@@ -365,45 +363,46 @@ for (i in 1:length(meses1)) {
   medias_ciclo_dsmin1[i] <- media_mes_min
 }
 
-
 #Armo un df con la media climatologica y las medias mensuales del 2020
+ #correspondientes al ciclo estacional
 df_comparacion <- data.frame("Mes" = meses1,
                              "Media_climatologica_sin_2020" = medias_ciclo1,
                              "Media_dsmax_sin_2020" = medias_ciclo_dsmax1,
                              "Media_dsmin_sin_2020" = medias_ciclo_dsmin1,
-                             "Media mensual 2020" = media_2020,
+                             "Media_mensual_2020" = media_2020,
                              "Media_dsmax_2020" = media_2020_dsmax,
                              "Media_dsmin_2020" = media_2020_dsmin)
 
-
-######CORREGIR######
-
 #Armo el grafico
 comp <- ggplot(data = df_comparacion,
-               mapping = aes(x = Mes, y = media_climatologica)) +
+               mapping = aes(x = Mes, y = Media_climatologica_sin_2020)) +
   geom_line(color = "black", linewidth = 1) + 
-  geom_line(data = df_comparacion, mapping = aes(x = Mes, y = media_2020), 
-            color = "darkred", size = 1)
+  geom_point(color = "black") +
+  geom_line(data = df_comparacion,
+            mapping = aes(x = Mes, y = Media_dsmax_sin_2020),
+            color = "black") +
+  geom_line(data = df_comparacion,
+            mapping = aes(x = Mes, y = Media_dsmin_sin_2020),
+            color = "black") +
+  geom_line(data = df_comparacion,
+            mapping = aes(x = Mes, y = Media_mensual_2020), 
+            color = "darkred", size = 1) +
+  geom_point(data = df_comparacion,
+             mapping = aes(x = Mes, y = Media_mensual_2020), 
+             color = "darkred") +
+  geom_line(data = df_comparacion,
+            mapping = aes(x = Mes, y = Media_dsmax_2020),
+            color = "darkred") +
+  geom_line(data = df_comparacion,
+            mapping = aes(x = Mes, y = Media_dsmin_2020),
+            color = "darkred") +
+  labs(title = "Comparacion de ciclos estacionales de CO2",
+       subtitle = "Periodo 1984-2022 (negro) y anio 2020 (rojo)",
+       x = "Tiempo", y = "")
 comp
 
+### FIN :) ###
 
-media_2020_des <- c()
-for (i in 1:length(meses1)) {
-  datos_mes_2020 <- datos_2020[datos_2020$Mes == i,]
-  media_mes_2020 <- round(mean(datos_mes_2020$Dif), 2)
-  media_2020_des[i] <- media_mes_2020
-}
-
-df_comp <- data.frame("Mes" = meses1,
-                      "Media.climatologica" = medias_dif, 
-                      "Media.mensual.2020" = media_2020_des)
-
-comp2 <- ggplot(data = df_comp,
-               mapping = aes(x = Mes, y = Media.climatologica)) +
-  geom_line(color = "black", linewidth = 1) + 
-  geom_line(data = df_comp, mapping = aes(x = Mes, y = media_2020_des), 
-            color = "darkred", size = 1)
-comp2
 
 
 
