@@ -215,9 +215,9 @@ g <- ggplot(data = datos_covid, mapping = aes(x = Fecha, y = CO2_ppm)) +
   geom_text(datos_covid,
             mapping = aes(label = Etiqueta, x = Fecha, y = Media_corrida),
             color = "#191970", cex = 6) +
-  labs(title = "Mediciones de CO2 durante la pandemia en Mauna Loa",
+  labs(title = "Mediciones de CO2 en Mauna Loa. Período 2020-2021",
        x = "Tiempo", y = "CO2 (ppm)",
-       subtitle = "Con promedios mensuales (azul) y semanales (violeta)")
+       subtitle = "Promedios mensuales (azul) y semanales (violeta)")
 g
 
 
