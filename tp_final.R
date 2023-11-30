@@ -1,35 +1,30 @@
 
 ### TP FINAL ###
- ## Analisis de las concentraciones de CO2 en Hawaii ##
+ ## Analisis de las concentraciones de CO2 en la atmosfera ##
 
 #Setear el directorio de trabajo
 setwd()
 
 #Leo el archivo ascii y cargo los datos
- #CASA
-archivo <- "~/PracticasLabo/TP_Final/co2_daily_mlo.csv"
-archivo1 <- "~/PracticasLabo/TP_Final/co2_mm_mlo.csv"
- #FACU
-archivo <- "~/Documentos/Labo_Luca/TP_Final/co2_daily_mlo.csv" 
-archivo1 <- "~/Documentos/Labo_Luca/TP_Final/co2_mm_mlo.csv"
-#Direcciones de los archivos a usar
+archivo <- "~/camino_archvio_datos_diarios/co2_daily_mlo.csv"
+archivo1 <- "~/camino_archivo_datos mensuales/co2_mm_mlo.csv"
 
 datos <- read.csv(archivo, skip = 32)
 head(datos)
 tail(datos) #Datos diarios desde Mayo de 1974 hasta Septiembre de 2023
 
-#Le pongo nombre a las columnas del data frame
-colnames(datos) = c("Anio","Mes","Dia","Dia_decimal","CO2_ppm")
-
 datos1 <- read.csv(archivo1, skip = 40)
 head(datos1)
 tail(datos1) #Datos mensuales desde Marzo de 1958 hasta Septiembre de 2023
 
-#Recorto mis datos
+#Le pongo nombre a las columnas del data frame datos
+colnames(datos) = c("Anio","Mes","Dia","Dia_decimal","CO2_ppm")
+
+#Recorto mis datos al periodo 1984-2022
 datos <- datos[datos$Anio %in% 1984:2022,]
 datos1 <- datos1[datos1$year %in% 1984:2022,]
 
-#Relleno los dias que no hay datos con el valor mensual de ese mes
+#Relleno los dias que no hay datos con la media mensual de ese mes
 #Armo un nuevo df y lo voy llenando
  #Anios
 anios <- rep(1984:2022, each = 365)
@@ -69,7 +64,7 @@ for (i in 1:length(datos$Anio)) {
   mes <- datos$Mes[i]
   dia <- datos$Dia[i]
   fecha <- make_date(year = anio, month = mes, day = dia)
-  fecha <- format(fecha, tz="")
+  fecha <- format(fecha, tz = "")
   Fecha[i] <- fecha 
 }
 Fecha <- ymd(Fecha)
@@ -106,7 +101,7 @@ for (i in 1:length(anios1)) {
   }
 }
 
-#Completo  los dias del nuevo df con los datos de los dias que si tengo
+#Completo los dias del nuevo df con los datos de los dias que si tienen valor
 for (i in 1:length(datos$Fecha)) {
   fecha <- datos$Fecha[i]
   datos_nuevo$CO2_ppm[datos_nuevo$Fecha == fecha] <- 
@@ -114,10 +109,10 @@ for (i in 1:length(datos$Fecha)) {
 }
 
 #Quiero aprovechar los datos desestacionalizados pero solamente estan en el
-#archivo con datos mensuales, entonces voy a seleccionar el periodo 
-#Enero 1984 - Diciembre 2022, recorto esos datos que me interesan y los pego
-#en los diarios
-#Agrego en "datos" una columna con los datos desestacionalizados
+ #archivo con datos mensuales, entonces voy a seleccionar el periodo 
+ #Enero 1984 - Diciembre 2022, recorto esos datos que me interesan y los pego
+ #en los diarios
+#Agrego en "datos_nuevo" una columna con los datos desestacionalizados
 Desestacionalizado = c()
 for (i in 1:length(anios1)) {
   anio = anios1[i]
@@ -137,63 +132,65 @@ for (i in 1:length(anios1)) {
 #Agrego a mis datos la columna con los datos desestacionalizados
 datos_nuevo = cbind(datos_nuevo, Desestacionalizado)
 
-#Selecciono los datos de 2020 a 2021 para armar el grafico solicitado
-datos_covid <- datos_nuevo[datos_nuevo$Anio %in% 2020:2021,]
+
+# a -----------------------------------------------------------------------
+#Selecciono los datos de 2018 a 2019 para armar el grafico solicitado
+datos_periodo <- datos_nuevo[datos_nuevo$Anio %in% 2018:2019,]
 
 #Calculo los promedios mensuales y semanales
  #PROMEDIO MENSUAL
-anios_covid <- c(2020:2021)
-media_mensual_covid = c()
-for (i in 1:length(anios_covid)) {
+periodo <- c(2018:2019)
+media_mensual_periodo = c()
+for (i in 1:length(periodo)) {
   for (j in 1:length(meses1)) {
-    anio <- anios_covid[i]
-    datos_anio <- datos_covid[datos_covid$Anio == anio,]
+    anio <- periodo[i]
+    datos_anio <- datos_periodo[datos_periodo$Anio == anio,]
     datos_mes <- datos_anio[datos_anio$Mes == j,]
     media_mes <- round(mean(datos_mes$CO2_ppm, na.rm = T),2)
-    media_mensual_covid <- c(media_mensual_covid, media_mes)
+    media_mensual_periodo <- c(media_mensual_periodo, media_mes)
   }
 }
 
  #PROMEDIO SEMANAL
-media_semanal_covid = c()
-for (i in 1:length(anios_covid)) {
+media_semanal_periodo = c()
+for (i in 1:length(periodo)) {
   for (j in 1:length(meses1)) {
-    anio <- anios_covid[i]
-    datos_anio <- datos_covid[datos_covid$Anio == anio,]
+    anio <- periodo[i]
+    datos_anio <- datos_periodo[datos_periodo$Anio == anio,]
     datos_mes <- datos_anio[datos_anio$Mes == j,]
     for (k in seq(1,31,8)) {
       semana <- datos_mes[datos_mes$Dia %in% k:(k+7),]
       media_semanal <- round(mean(semana$CO2_ppm, na.rm = T), 2)
-      media_semanal_covid <- c(media_semanal_covid, media_semanal)
+      media_semanal_periodo <- c(media_semanal_periodo, media_semanal)
     }
   }
 }
 
 #Agrego las medias al data frame
-datos_covid$Media_mensual <- 0
-datos_covid$Media_semanal <- 0
+datos_periodo$Media_mensual <- 0
+datos_periodo$Media_semanal <- 0
 
 k <- 0
-for (i in 1:length(anios_covid)) {
- anio <- anios_covid[i]
+for (i in 1:length(periodo)) {
+ anio <- periodo[i]
  for (j in 1:length(meses1)) {
-   datos_covid$Media_mensual[
-    datos_covid$Anio == anio & datos_covid$Mes == j] <- 
-     media_mensual_covid[j+k*12]
+   datos_periodo$Media_mensual[
+    datos_periodo$Anio == anio & datos_periodo$Mes == j] <- 
+     media_mensual_periodo[j+k*12]
  }
  k <- k + 1
 }
 
 sec <- seq(1,31,8)
 h <- 0
-for (i in 1:length(anios_covid)) {
-  anio <- anios_covid[i]
+for (i in 1:length(periodo)) {
+  anio <- periodo[i]
   for (j in 1:length(meses1)) {
     for (k in 1:length(sec)) {
       dia <- sec[k]
-      datos_covid$Media_semanal[
-        datos_covid$Anio == anio & datos_covid$Mes == j &
-          datos_covid$Dia %in% dia:(dia+7)] <- media_semanal_covid[k+h*4]
+      datos_periodo$Media_semanal[
+        datos_periodo$Anio == anio & datos_periodo$Mes == j &
+          datos_periodo$Dia %in% dia:(dia+7)] <- media_semanal_periodo[k+h*4]
     }
     h <- h + 1
   }
@@ -201,28 +198,29 @@ for (i in 1:length(anios_covid)) {
 
 #Armo el grafico pedido con ggplot 
 require(ggplot2)
-datos_covid$Etiqueta <- month(datos_covid$Mes,label = T)
-datos_covid$Etiqueta[which(datos_covid$Dia != 15)] <- NA
-datos_covid$Media_corrida <- datos_covid$Media_mensual + 0.2
+datos_periodo$Etiqueta <- month(datos_periodo$Mes,label = T)
+datos_periodo$Etiqueta[which(datos_periodo$Dia != 15)] <- NA
+datos_periodo$Media_corrida <- datos_periodo$Media_mensual + 0.25
 
-g <- ggplot(data = datos_covid, mapping = aes(x = Fecha, y = CO2_ppm)) +
+g <- ggplot(data = datos_periodo, mapping = aes(x = Fecha, y = CO2_ppm)) +
   geom_point(color = "grey45") +
   scale_x_date(date_breaks = "2 month", date_labels = "%Y-%m") + 
   geom_point(mapping = aes(x = Fecha, y = Media_semanal), shape = 0,
              fill = "darkviolet", color = "darkviolet", size = 0.8) + 
   geom_point(mapping = aes(x = Fecha, y = Media_mensual),
              shape = 0, fill = "darkblue", color = "darkblue", size = 0.8) +
-  geom_text(datos_covid,
+  geom_text(datos_periodo,
             mapping = aes(label = Etiqueta, x = Fecha, y = Media_corrida),
             color = "#191970", cex = 6) +
-  labs(title = "Mediciones de CO2 en Mauna Loa. Período 2020-2021",
+  labs(title = "Mediciones de CO2 en Mauna Loa",
        x = "Tiempo", y = "CO2 (ppm)",
-       subtitle = "Promedios mensuales (azul) y semanales (violeta)")
+       subtitle = "Período 2018-2019. Promedios mensuales (azul) y semanales (violeta)")
 g
 
 
+# b -----------------------------------------------------------------------
 #Armo un nuevo df solo con los promedios para guardar en una tabla ascii
-anios_tabla <- rep(2020:2021, each = 48)
+anios_tabla <- rep(2018:2019, each = 48)
 meses_tabla <- rep(1:12, each = 4, times = 2)
 semanas_tabla <- rep(1:4, times = 24) 
 df_tabla <- data.frame("Anio" = anios_tabla, "Mes" = meses_tabla, 
@@ -230,23 +228,24 @@ df_tabla <- data.frame("Anio" = anios_tabla, "Mes" = meses_tabla,
                        "Media semanal" = 0)
 
 #Lleno las columnas de las medias
-df_tabla$Media.semanal <- media_semanal_covid
+df_tabla$Media.semanal <- media_semanal_periodo
 
 k <- 0
-for (i in 1:length(anios_covid)) {
+for (i in 1:length(periodo)) {
   for (j in 1:length(meses1)) {
-    anio <- anios_covid[i]
+    anio <- periodo[i]
     df_tabla$Media.mensual[df_tabla$Anio == anio & df_tabla$Mes == j] <-
-      media_mensual_covid[j+k*12]
+      media_mensual_periodo[j+k*12]
   }
   k <- k + 1
 }
 
 #Guardo los datos en una tabla
-write.table(df_tabla, file = "Medias mensuales y semanales de CO2 en pandemia",
+write.table(df_tabla, file = "Medias mensuales y semanales de CO2 en 2018-2019",
             col.names = T, row.names = F, quote = F)
 
 
+# c -----------------------------------------------------------------------
 #Voy a comparar la serie temporal completa (1984-2022) con y sin la
  #estacionalidad, ambos graficos en el mismo pero en distintos paneles
 serie <- ggplot(data = datos_nuevo, mapping = aes(x = Fecha, y = CO2_ppm)) +
@@ -268,6 +267,7 @@ require(patchwork)
 serie/serie2
 
 
+# d -----------------------------------------------------------------------
 #Armo una columna con las ppm que corresponden al ciclo estacional, luego 
  #los promedio por mes sobre todos los anios
 datos_nuevo$Ciclo <- datos_nuevo$CO2_ppm -
@@ -319,13 +319,14 @@ p <- ggplot(data = df_estacionalidad, mapping = aes(x = Mes, y = Media_ciclo)) +
   geom_line(data = df_estacionalidad, mapping = aes(x = Mes, y = Media_dsmin),
             color = "#757575", linewidth = 0.8) +
   labs(title = "Ciclo estacional del CO2",
-       subtitle = "Periodo 1984-2022", x = "Meses", y = "")
+       subtitle = "Periodo 1984-2022", x = "Meses", y = "PPM")
 p
 #Sí, hay variabilidad estacional, si no hubiese, el grafico tomaria un valor en
  #y constante, por lo tanto las concentraciones de CO2 en la atmosfera varian
  #segun la estacion o la epoca del anio.
 
 
+# e -----------------------------------------------------------------------
 #Para ver si hay un cambio en el registro del CO2 debido al COVID, comparo el
  #anio de pandemia con encierro mas estricto (2020) con el promedio por mes
  #sobre todos los anios
@@ -398,7 +399,7 @@ comp <- ggplot(data = df_comparacion,
             color = "darkred") +
   labs(title = "Comparacion de ciclos estacionales de CO2",
        subtitle = "Periodo 1984-2022 (negro) y anio 2020 (rojo)",
-       x = "Tiempo", y = "")
+       x = "Tiempo", y = "PPM")
 comp
 
 ### FIN :) ###
